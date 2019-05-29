@@ -1,7 +1,7 @@
 /*
  * 类名：		WorkspaceCleaner
  * 创建日期：	2012/06/04
- * 最近修改：	2013/07/19
+ * 最近修改：	2019/05/29
  * 作者：		徐犇
  */
 
@@ -13,29 +13,32 @@ import java.io.*;
 import javax.swing.*;
 
 /**
- * (编程)工作区清理类 
+ * (编程)工作区清理类
+ * 
  * @author ben
  */
-@SuppressWarnings("serial")
 public final class WorkspaceCleaner extends JFrame implements ActionListener {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 4889377108968286233L;
+
 	/**
 	 * 清理的文件夹数目
 	 */
 	public static int dirnum = 0;
-	
+
 	/**
 	 * 清理的文件数目
 	 */
 	public static int filenum = 0;
 
-	private JMenuItem menuCleanEclipseForCpp = new JMenuItem(
-			"清理Eclipse(C++)");
+	private JMenuItem menuCleanEclipseForCpp = new JMenuItem("清理Eclipse(C/C++)");
 
-	private JMenuItem menuCleanEclipseForJava = new JMenuItem(
-			"清理Eclipse(Java)");
+	private JMenuItem menuCleanEclipseForJava = new JMenuItem("清理Eclipse(Java)");
 
 	private JMenuItem menuCleanVS2010 = new JMenuItem("清理VS2010");
-	
+
 	private JMenuItem menuCleanObj = new JMenuItem("清理Obj文件");
 
 	private JMenuItem menuCleanDefaultDir = new JMenuItem("清理默认文件夹");
@@ -86,9 +89,9 @@ public final class WorkspaceCleaner extends JFrame implements ActionListener {
 	public void actionPerformed(ActionEvent e) {
 		String filePath = null;
 		JMenuItem m = (JMenuItem) e.getSource();
-		int type = CleanProject.DEFAULT;
+		CleanType type = CleanType.DEFAULT;
 		if (m == menuCleanDefaultDir) {
-			filePath = "H:\\ben\\workspace";
+			filePath = "E:\\workspace";
 		} else {
 			try {
 				JFileChooser fileChooser = new JFileChooser(".");
@@ -103,13 +106,13 @@ public final class WorkspaceCleaner extends JFrame implements ActionListener {
 				return;
 			}
 			if (m == menuCleanEclipseForCpp) {
-				type = CleanProject.ECLIPSE_CPP;
+				type = CleanType.ECLIPSE_CPP;
 			} else if (m == menuCleanEclipseForJava) {
-				type = CleanProject.ECLIPSE_JAVA;
+				type = CleanType.ECLIPSE_JAVA;
 			} else if (m == menuCleanVS2010) {
-				type = CleanProject.VS2010;
-			}else if(m == menuCleanObj) {
-				type = CleanProject.OBJ;
+				type = CleanType.VS2010;
+			} else if (m == menuCleanObj) {
+				type = CleanType.OBJ;
 			}
 		}
 
@@ -120,6 +123,7 @@ public final class WorkspaceCleaner extends JFrame implements ActionListener {
 		if (ce.run(filePath, type)) {
 			JOptionPane.showMessageDialog(this, "清理完毕!\n共清理文件夹" + dirnum
 					+ "个，文件" + filenum + "个!", "恭喜", JOptionPane.OK_OPTION);
+			dirnum = filenum = 0;
 		} else {
 			JOptionPane.showMessageDialog(this, "清理出错!", "抱歉",
 					JOptionPane.ERROR_MESSAGE);
@@ -128,14 +132,11 @@ public final class WorkspaceCleaner extends JFrame implements ActionListener {
 	}
 }
 
+enum CleanType {
+	DEFAULT, ECLIPSE_CPP, ECLIPSE_JAVA, VS2010, VS2008, VS98, OBJ
+}
+
 class CleanProject {
-	public static final int DEFAULT = 0;
-	public static final int ECLIPSE_CPP = 1;
-	public static final int ECLIPSE_JAVA = 2;
-	public static final int VS2010 = 3;
-	public static final int VS2008 = 4;
-	public static final int VS98 = 5;
-	public static final int OBJ = 6;
 
 	/**
 	 * 运行清理功能
@@ -143,7 +144,7 @@ class CleanProject {
 	 * @param filePath
 	 * @return
 	 */
-	public boolean run(String filePath, int type) {
+	public boolean run(String filePath, CleanType type) {
 		File f = new File(filePath);
 		try {
 			clean(f, type);
@@ -153,7 +154,7 @@ class CleanProject {
 		}
 	}
 
-	private boolean judgeName(String filename, int type) {
+	private boolean judgeName(String filename, CleanType type) {
 		switch (type) {
 		case DEFAULT:
 			return filename.equals("Debug") || filename.equals("Release")
@@ -179,10 +180,10 @@ class CleanProject {
 	 * 
 	 * @param f
 	 */
-	private void clean(File f, int type) {
+	private void clean(File f, CleanType type) {
 		if (f.isDirectory()) {
 			String name = f.getName();
-			if(judgeName(name, type)) {
+			if (judgeName(name, type)) {
 				delete(f);
 				WorkspaceCleaner.dirnum++;
 				return;
@@ -196,15 +197,15 @@ class CleanProject {
 				File fchild = new File(f.getPath() + "\\\\" + list[i]);
 				clean(fchild, type);
 			}
-		}else if(type == OBJ) {
+		} else if (type == CleanType.OBJ) {
 			String name = f.getName();
-			if(name.endsWith(".obj") || name.endsWith(".OBJ")) {
+			if (name.endsWith(".obj") || name.endsWith(".OBJ")) {
 				f.delete();
 				WorkspaceCleaner.filenum++;
 			}
-		}else if(type == VS2010) {
+		} else if (type == CleanType.VS2010) {
 			String name = f.getName();
-			if(name.endsWith(".sdf") || name.endsWith(".SDF")) {
+			if (name.endsWith(".sdf") || name.endsWith(".SDF")) {
 				f.delete();
 				WorkspaceCleaner.filenum++;
 			}
@@ -217,19 +218,21 @@ class CleanProject {
 	 * @param f
 	 */
 	private void delete(File f) {
-		if (!f.isDirectory()) {
+		if (f.isFile()) {
+			System.out.println(f.getAbsolutePath());
 			f.delete();
 			WorkspaceCleaner.filenum++;
-			return;
-		}
-		String[] list = f.list();
-		if (list != null) {
-			for (int i = 0; i < list.length; i++) {
-				File fchild = new File(f.getPath() + "\\\\" + list[i]);
+		} else if (f.isDirectory()) {
+			String[] childList = f.list();
+			if (childList == null) {
+				return;
+			}
+			for (String child : childList) {
+				File fchild = new File(f.getPath() + "\\\\" + child);
 				delete(fchild);
 			}
+			System.out.println(f.getAbsolutePath());
+			f.delete();
 		}
-		f.delete();
-		return;
 	}
 }
